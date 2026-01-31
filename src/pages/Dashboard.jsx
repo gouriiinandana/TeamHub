@@ -89,7 +89,7 @@ const Dashboard = () => {
     return (
         <div className="space-y-10 pb-8">
             <div className="text-center space-y-2 pt-4 md:pt-0 mb-12 md:mb-8">
-                <h2 className="text-3xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 tracking-tight">Company Leaderboard</h2>
+                <h2 className="text-3xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 tracking-tight">MGC Group Leaderboard</h2>
                 <p className="text-slate-500 text-base md:text-lg">Celebrating excellence and teamwork across the organization</p>
             </div>
 
