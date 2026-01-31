@@ -1,16 +1,56 @@
-# React + Vite
+# TeamHub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**TeamHub** is a comprehensive employee management and gamification platform designed to boost team engagement, track performance, and streamline workforce operations.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Employee Management**: Add, edit, and manage employee profiles with role-based access control
+- **Team Organization**: Create and manage teams with designated leads
+- **Gamification System**: Track points, conduct games, and maintain leaderboards
+- **Daily Task Management**: OTT (One Thing Today) and MIT (Most Important Task) tracking
+- **Company Workforce**: Manage announcements, official teams, and scheduled activities
+- **Admin Command Center**: Comprehensive admin panel for user management, system settings, and activity logs
+- **Modern UI**: Clean, responsive design with smooth animations and intuitive navigation
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React + Vite
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **State Management**: React Context API
+- **Storage**: LocalStorage (client-side persistence)
+- **Routing**: React Router
 
-## Expanding the ESLint configuration
+## 📦 Installation
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+# Clone the repository
+git clone https://github.com/gouriiinandana/TeamHub.git
+
+# Navigate to project directory
+cd teamhub
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+## 🎯 Usage
+
+1. **Sign Up/Login**: Create an account or log in to access the platform
+2. **Dashboard**: View team statistics, leaderboards, and recent activities
+3. **Manage Employees**: Add team members, assign roles, and track performance
+4. **Create Teams**: Organize employees into functional teams
+5. **Schedule Games**: Plan and conduct team-building activities
+6. **Admin Panel**: Access advanced management features (admin users only)
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 👨‍💻 Author
+
+**Gouri Nandana**
+- GitHub: [@gouriiinandana](https://github.com/gouriiinandana)
