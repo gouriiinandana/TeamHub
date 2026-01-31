@@ -19,7 +19,6 @@ const Layout = ({ children }) => {
         { icon: Trophy, label: 'Games', path: '/games' },
         { icon: CheckSquare, label: 'Daily Task', path: '/daily-task' },
         { icon: Building2, label: 'Workforce', path: '/company-workforce' },
-        { icon: ShieldCheck, label: 'Admin', path: '/admin' },
     ];
 
     const handleLogout = () => {
