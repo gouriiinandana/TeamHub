@@ -26,10 +26,20 @@ const CompanyWorkforce = () => {
     const { currentUser } = useAuth();
     const isAdmin = currentUser?.role === 'Admin';
 
-    // Identify if current user is a lead of any workforce team
-    const myEmployee = employees.find(emp => emp.email === currentUser?.email);
-    const ledTeams = workforceTeams.filter(t => t.lead === myEmployee?.id);
-    const isTeamLead = ledTeams.length > 0;
+    // Identify if current user is a lead of any team (Workforce OR Official)
+    const myEmployee = employees.find(emp => emp.email?.toLowerCase() === currentUser?.email?.toLowerCase());
+
+    // Teams from workforceTeams where user is lead
+    const ledWorkforceTeams = workforceTeams.filter(t => t.lead === myEmployee?.id);
+
+    // Regular teams where user is lead (based on employee record)
+    const ledOfficialTeams = teams.filter(t => {
+        const lead = employees.find(emp => emp.teamId === t.id && emp.role === 'Team Lead');
+        return lead?.id === myEmployee?.id;
+    });
+
+    const allLedTeams = [...ledWorkforceTeams, ...ledOfficialTeams];
+    const isTeamLead = allLedTeams.length > 0;
     const canScheduleGames = isAdmin || isTeamLead;
 
     const [showTeamModal, setShowTeamModal] = useState(false);
@@ -365,8 +375,8 @@ const CompanyWorkforce = () => {
                             onClick={() => {
                                 resetGameForm();
                                 // For team leads, pre-select their first team if they lead only one
-                                if (!isAdmin && ledTeams.length === 1) {
-                                    setGameForm(prev => ({ ...prev, conductingTeam: ledTeams[0].id }));
+                                if (!isAdmin && allLedTeams.length === 1) {
+                                    setGameForm(prev => ({ ...prev, conductingTeam: allLedTeams[0].id }));
                                 }
                                 setShowGameModal(true);
                             }}
@@ -379,9 +389,9 @@ const CompanyWorkforce = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).length > 0 ? (
-                        scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).map(game => {
-                            const canEditThisGame = isAdmin || ledTeams.some(lt => lt.id === game.conductingTeam);
+                    {scheduledGames.length > 0 ? (
+                        scheduledGames.map(game => {
+                            const canEditThisGame = isAdmin || allLedTeams.some(lt => lt.id === game.conductingTeam);
 
                             return (
                                 <div key={game.id} className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-50 flex flex-col group relative">
@@ -407,7 +417,7 @@ const CompanyWorkforce = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Users size={14} className="text-emerald-400" />
-                                            <span>By: {workforceTeams.find(wt => wt.id === game.conductingTeam)?.name}</span>
+                                            <span>By: {workforceTeams.find(wt => wt.id === game.conductingTeam)?.name || teams.find(t => t.id === game.conductingTeam)?.name || 'Unknown Team'}</span>
                                         </div>
                                     </div>
                                     <div className="mt-4">
@@ -682,10 +692,25 @@ const CompanyWorkforce = () => {
                                     className="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-400 outline-none"
                                     required
                                 >
-                                    <option value="">Select Workforce Team</option>
-                                    {(isAdmin ? workforceTeams : ledTeams).map(wt => (
-                                        <option key={wt.id} value={wt.id}>{wt.name} ({wt.type})</option>
-                                    ))}
+                                    <option value="">Select Conducting Team</option>
+                                    {isAdmin ? (
+                                        <>
+                                            <optgroup label="Workforce Teams">
+                                                {workforceTeams.map(wt => (
+                                                    <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                                ))}
+                                            </optgroup>
+                                            <optgroup label="Official Teams">
+                                                {teams.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        </>
+                                    ) : (
+                                        allLedTeams.map(t => (
+                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
                             <div>
