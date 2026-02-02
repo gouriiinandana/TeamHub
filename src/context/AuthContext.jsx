@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -10,71 +11,45 @@ export const AuthProvider = ({ children }) => {
         return saved ? JSON.parse(saved) : null;
     });
 
-    const [registeredUsers, setRegisteredUsers] = useState(() => {
-        const saved = localStorage.getItem('teamhub_registered_users');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        localStorage.setItem('teamhub_current_user', JSON.stringify(currentUser));
-    }, [currentUser]);
-
-    useEffect(() => {
-        localStorage.setItem('teamhub_registered_users', JSON.stringify(registeredUsers));
-    }, [registeredUsers]);
-
-    const signup = (userData) => {
-        // userData: { name, email, password }
-        const { name, email, password } = userData;
-
-        // Check if user already exists
-        const existingUser = registeredUsers.find(u => u.email === email);
-        if (existingUser) {
-            throw new Error('User with this email already exists');
+    const signup = async (userData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const user = await authService.signup(userData);
+            const { token, ...userWithoutToken } = user;
+            setCurrentUser(userWithoutToken);
+            return userWithoutToken;
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Signup failed';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
         }
-
-        // Validate company email (basic validation - can be customized)
-        if (!email.includes('@')) {
-            throw new Error('Please enter a valid email address');
-        }
-
-        // Create new user
-        const newUser = {
-            id: Date.now().toString(),
-            name,
-            email,
-            password, // In production, this should be hashed
-            phone: '',
-            age: '',
-            location: '',
-            emailVerified: false,
-            phoneVerified: false,
-            createdAt: new Date().toISOString()
-        };
-
-        setRegisteredUsers(prev => [...prev, newUser]);
-
-        // Auto-login after signup
-        const { password: _, ...userWithoutPassword } = newUser;
-        setCurrentUser(userWithoutPassword);
-
-        return userWithoutPassword;
     };
 
-    const login = (email, password) => {
-        const user = registeredUsers.find(u => u.email === email && u.password === password);
-
-        if (!user) {
-            throw new Error('Invalid email or password');
+    const login = async (email, password) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const user = await authService.login(email, password);
+            const { token, ...userWithoutToken } = user;
+            setCurrentUser(userWithoutToken);
+            return userWithoutToken;
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Login failed';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
         }
-
-        const { password: _, ...userWithoutPassword } = user;
-        setCurrentUser(userWithoutPassword);
-
-        return userWithoutPassword;
     };
 
     const logout = () => {
+        authService.logout();
         setCurrentUser(null);
     };
 
@@ -82,17 +57,20 @@ export const AuthProvider = ({ children }) => {
         return currentUser !== null;
     };
 
-    const updateUserProfile = (profileData) => {
-        // profileData: { phone, age, location, emailVerified, phoneVerified }
-        const updatedUser = { ...currentUser, ...profileData };
-        setCurrentUser(updatedUser);
-
-        // Update in registered users list
-        setRegisteredUsers(prev => prev.map(u =>
-            u.id === currentUser.id ? { ...u, ...profileData } : u
-        ));
-
-        return updatedUser;
+    const updateUserProfile = async (profileData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const updatedUser = await authService.updateProfile(profileData);
+            setCurrentUser(updatedUser);
+            return updatedUser;
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || 'Profile update failed';
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -102,7 +80,9 @@ export const AuthProvider = ({ children }) => {
             login,
             logout,
             isAuthenticated,
-            updateUserProfile
+            updateUserProfile,
+            loading,
+            error
         }}>
             {children}
         </AuthContext.Provider>

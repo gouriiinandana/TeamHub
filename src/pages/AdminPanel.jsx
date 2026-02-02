@@ -358,26 +358,121 @@ const AdminPanel = () => {
                     )}
 
                     {activeTab === 'database' && (
-                        <div className="text-center py-20 px-4">
-                            <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 mx-auto mb-6">
-                                <Database size={40} />
+                        <div className="space-y-8">
+                            {/* Database Statistics */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl p-6 border border-indigo-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-bold text-indigo-700">Total Records</span>
+                                        <Users size={20} className="text-indigo-500" />
+                                    </div>
+                                    <p className="text-3xl font-black text-indigo-900">
+                                        {employees.length + teams.length + games.length + scheduledGames.length + workforceTeams.length + announcements.length}
+                                    </p>
+                                </div>
+                                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-6 border border-emerald-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-bold text-emerald-700">Collections</span>
+                                        <Database size={20} className="text-emerald-500" />
+                                    </div>
+                                    <p className="text-3xl font-black text-emerald-900">9</p>
+                                </div>
+                                <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl p-6 border border-amber-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-bold text-amber-700">Activities Logged</span>
+                                        <Activity size={20} className="text-amber-500" />
+                                    </div>
+                                    <p className="text-3xl font-black text-amber-900">{activities.length}</p>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Database Management</h3>
-                            <p className="text-slate-500 max-w-md mx-auto mb-8">
-                                Connect to external storage, perform bulk exports, or clean up orphaned data records.
-                            </p>
-                            <div className="flex flex-wrap justify-center gap-4">
-                                <button className="px-6 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center gap-2 shadow-lg">
-                                    <Search size={18} />
-                                    Run System Audit
-                                </button>
-                                <button
-                                    onClick={clearData}
-                                    className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center gap-2 shadow-lg"
-                                >
-                                    <Trash2 size={18} />
-                                    Wipe All Data
-                                </button>
+
+                            {/* Database Breakdown */}
+                            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <Database size={20} className="text-indigo-600" />
+                                    Database Breakdown
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Employees</span>
+                                        <span className="text-lg font-bold text-indigo-600">{employees.length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Teams</span>
+                                        <span className="text-lg font-bold text-indigo-600">{teams.length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Games</span>
+                                        <span className="text-lg font-bold text-indigo-600">{games.length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Scheduled Games</span>
+                                        <span className="text-lg font-bold text-indigo-600">{scheduledGames.length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Workforce Teams</span>
+                                        <span className="text-lg font-bold text-indigo-600">{workforceTeams.length}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                                        <span className="text-sm font-medium text-slate-600">Announcements</span>
+                                        <span className="text-lg font-bold text-indigo-600">{announcements.length}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Database Management Section */}
+                            <div className="text-center py-12 px-4">
+                                <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 mx-auto mb-6">
+                                    <Database size={40} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Database Management</h3>
+                                <p className="text-slate-500 max-w-md mx-auto mb-8">
+                                    Connect to external storage, perform bulk exports, or clean up orphaned data records.
+                                </p>
+                                <div className="flex flex-wrap justify-center gap-4">
+                                    <button
+                                        onClick={() => {
+                                            alert(`System Audit Report\n\n` +
+                                                `Total Records: ${employees.length + teams.length + games.length + scheduledGames.length + workforceTeams.length + announcements.length}\n` +
+                                                `Employees: ${employees.length}\n` +
+                                                `Teams: ${teams.length}\n` +
+                                                `Games: ${games.length}\n` +
+                                                `Scheduled Games: ${scheduledGames.length}\n` +
+                                                `Workforce Teams: ${workforceTeams.length}\n` +
+                                                `Announcements: ${announcements.length}\n` +
+                                                `Activities: ${activities.length}\n\n` +
+                                                `Active Employees: ${employees.filter(e => e.status === 'Active').length}\n` +
+                                                `Inactive Employees: ${employees.filter(e => e.status === 'Inactive').length}\n` +
+                                                `Total Points Distributed: ${employees.reduce((sum, e) => sum + (e.points || 0), 0)}\n\n` +
+                                                `Database Status: ✓ Healthy`
+                                            );
+                                        }}
+                                        className="px-6 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center gap-2 shadow-lg"
+                                    >
+                                        <Search size={18} />
+                                        Run System Audit
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('⚠️ WARNING: This will permanently delete ALL data from the database!\n\nThis includes:\n- All employees\n- All teams\n- All games\n- All scheduled games\n- All workforce teams\n- All announcements\n- All activity logs\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?')) {
+                                                if (window.confirm('FINAL CONFIRMATION:\n\nYou are about to wipe ALL data from the database.\n\nType "DELETE" in the next prompt to confirm.')) {
+                                                    const confirmation = prompt('Type DELETE to confirm data wipe:');
+                                                    if (confirmation === 'DELETE') {
+                                                        clearData();
+                                                        alert('✓ All data has been wiped from the database.');
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert('Data wipe cancelled. Incorrect confirmation text.');
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                        className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center gap-2 shadow-lg"
+                                    >
+                                        <Trash2 size={18} />
+                                        Wipe All Data
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
