@@ -43,8 +43,35 @@ const DailyTask = () => {
         setOttTasks(newTasks);
     };
 
+    // Check if current time is before 8 PM
+    const isOttTimeValid = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        return currentHour < 20; // Before 8 PM (20:00)
+    };
+
+    // Check if current time is between 6 AM and 10 PM
+    const isMitTimeValid = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        return currentHour >= 6 && currentHour < 22; // Between 6 AM and 10 PM
+    };
+
     const handleOttSubmit = (e) => {
         e.preventDefault();
+
+        // Check if it's today
+        if (!isToday) {
+            alert('You can only submit OTT tasks for today!');
+            return;
+        }
+
+        // Check time restriction
+        if (!isOttTimeValid()) {
+            alert('⏰ OTT Submission Deadline Passed!\n\nOTT tasks can only be submitted before 8:00 PM.\n\nPlease try again tomorrow before the deadline.');
+            return;
+        }
+
         const filledTasks = ottTasks.filter(task => task.trim() !== '');
         if (filledTasks.length === 0) {
             alert('Please add at least one task!');
@@ -56,6 +83,25 @@ const DailyTask = () => {
 
     const handleMitSubmit = (e) => {
         e.preventDefault();
+
+        // Check if it's today
+        if (!isToday) {
+            alert('You can only submit MIT for today!');
+            return;
+        }
+
+        // Check time restriction
+        if (!isMitTimeValid()) {
+            const now = new Date();
+            const currentHour = now.getHours();
+            if (currentHour < 6) {
+                alert('⏰ Too Early!\n\nMIT can only be submitted between 6:00 AM and 10:00 PM.\n\nPlease wait until 6:00 AM to submit your MIT.');
+            } else {
+                alert('⏰ MIT Submission Window Closed!\n\nMIT can only be submitted between 6:00 AM and 10:00 PM.\n\nThe submission window has closed for today. Please try again tomorrow.');
+            }
+            return;
+        }
+
         if (!selectedMIT) {
             alert('Please select a task!');
             return;
@@ -159,9 +205,17 @@ const DailyTask = () => {
                             <Moon size={24} className="text-indigo-600" />
                             OTT - Organize Today Tomorrow
                         </h2>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <div className="flex items-center gap-2 text-sm">
                             <Star size={16} className="text-amber-500" />
-                            <span className="font-medium">Fill before 8:00 PM</span>
+                            <span className="font-medium text-slate-600">Fill before 8:00 PM</span>
+                            {isToday && (
+                                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${isOttTimeValid()
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
+                                    }`}>
+                                    {isOttTimeValid() ? '✓ Open' : '✗ Closed'}
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -234,9 +288,17 @@ const DailyTask = () => {
                             <Sun size={24} className="text-amber-600" />
                             MIT - Most Important Task
                         </h2>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <div className="flex items-center gap-2 text-sm">
                             <Sun size={16} className="text-amber-500" />
-                            <span className="font-medium">Fill between 6:00 AM - 10:00 AM</span>
+                            <span className="font-medium text-slate-600">Fill between 6:00 AM - 10:00 PM</span>
+                            {isToday && (
+                                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${isMitTimeValid()
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
+                                    }`}>
+                                    {isMitTimeValid() ? '✓ Open' : '✗ Closed'}
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -297,8 +359,8 @@ const DailyTask = () => {
                                                 <label
                                                     key={index}
                                                     className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedMIT === task
-                                                            ? 'border-amber-500 bg-amber-50'
-                                                            : 'border-amber-200 bg-white/70 hover:border-amber-300'
+                                                        ? 'border-amber-500 bg-amber-50'
+                                                        : 'border-amber-200 bg-white/70 hover:border-amber-300'
                                                         }`}
                                                 >
                                                     <input
