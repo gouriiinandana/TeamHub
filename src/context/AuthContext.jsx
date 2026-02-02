@@ -1,49 +1,53 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [currentUser, setCurrentUser] = useState(() => {
-        const saved = localStorage.getItem('teamhub_current_user');
-        return saved ? JSON.parse(saved) : null;
-    });
-
-    const [registeredUsers, setRegisteredUsers] = useState(() => {
-        const saved = localStorage.getItem('teamhub_registered_users');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [currentUser, setCurrentUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        localStorage.setItem('teamhub_current_user', JSON.stringify(currentUser));
-    }, [currentUser]);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Get additional user data from Firestore
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists()) {
+                    setCurrentUser({ ...user, ...userDoc.data() });
+                } else {
+                    setCurrentUser(user);
+                }
+            } else {
+                setCurrentUser(null);
+            }
+            setLoading(false);
+        });
 
-    useEffect(() => {
-        localStorage.setItem('teamhub_registered_users', JSON.stringify(registeredUsers));
-    }, [registeredUsers]);
+        return unsubscribe;
+    }, []);
 
-    const signup = (userData) => {
-        // userData: { name, email, password }
+    const signup = async (userData) => {
         const { name, email, password } = userData;
 
-        // Check if user already exists
-        const existingUser = registeredUsers.find(u => u.email === email);
-        if (existingUser) {
-            throw new Error('User with this email already exists');
-        }
+        // Create user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-        // Validate company email (basic validation - can be customized)
-        if (!email.includes('@')) {
-            throw new Error('Please enter a valid email address');
-        }
-
-        // Create new user
-        const newUser = {
-            id: Date.now().toString(),
+        // Create user profile in Firestore
+        const userProfile = {
+            uid: user.uid,
             name,
             email,
-            password, // In production, this should be hashed
             phone: '',
             age: '',
             location: '',
@@ -52,59 +56,62 @@ export const AuthProvider = ({ children }) => {
             createdAt: new Date().toISOString()
         };
 
-        setRegisteredUsers(prev => [...prev, newUser]);
+        await setDoc(doc(db, 'users', user.uid), userProfile);
 
-        // Auto-login after signup
-        const { password: _, ...userWithoutPassword } = newUser;
-        setCurrentUser(userWithoutPassword);
-
-        return userWithoutPassword;
+        setCurrentUser({ ...user, ...userProfile });
+        return user;
     };
 
-    const login = (email, password) => {
-        const user = registeredUsers.find(u => u.email === email && u.password === password);
+    const login = async (email, password) => {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-        if (!user) {
-            throw new Error('Invalid email or password');
-        }
+        // Get profile data
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
 
-        const { password: _, ...userWithoutPassword } = user;
-        setCurrentUser(userWithoutPassword);
-
-        return userWithoutPassword;
+        setCurrentUser({ ...user, ...userData });
+        return user;
     };
 
     const logout = () => {
-        setCurrentUser(null);
+        return signOut(auth);
+    };
+
+    const resetPassword = (email) => {
+        return sendPasswordResetEmail(auth, email);
     };
 
     const isAuthenticated = () => {
         return currentUser !== null;
     };
 
-    const updateUserProfile = (profileData) => {
-        // profileData: { phone, age, location, emailVerified, phoneVerified }
+    const updateUserProfile = async (profileData) => {
+        if (!currentUser) return;
+
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, profileData);
+
         const updatedUser = { ...currentUser, ...profileData };
         setCurrentUser(updatedUser);
-
-        // Update in registered users list
-        setRegisteredUsers(prev => prev.map(u =>
-            u.id === currentUser.id ? { ...u, ...profileData } : u
-        ));
 
         return updatedUser;
     };
 
+    const value = {
+        currentUser,
+        signup,
+        login,
+        logout,
+        resetPassword,
+        isAuthenticated,
+        updateUserProfile,
+        loading
+    };
+
     return (
-        <AuthContext.Provider value={{
-            currentUser,
-            signup,
-            login,
-            logout,
-            isAuthenticated,
-            updateUserProfile
-        }}>
-            {children}
+        <AuthContext.Provider value={value}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

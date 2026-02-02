@@ -163,7 +163,7 @@ const Signup = () => {
                 </div>
 
                 <p className="text-center text-slate-400 text-xs mt-6">
-                    © 2024 TeamHub. All rights reserved.
+                    © 2026 TeamHub. All rights reserved.
                 </p>
             </div>
         </div>

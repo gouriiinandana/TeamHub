@@ -5,7 +5,7 @@ import { Mail, Lock, LogIn, Users, KeyRound } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, resetPassword } = useAuth();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -28,23 +28,26 @@ const Login = () => {
         }
     };
 
-    const handleForgotPassword = (e) => {
+    const handleForgotPassword = async (e) => {
         e.preventDefault();
         if (!resetEmail) {
             setResetMessage('Please enter your email address');
             return;
         }
 
-        // Simulate sending reset email
-        // In production, this would call an API endpoint
-        setResetMessage(`Password reset link has been sent to ${resetEmail}. Please check your inbox.`);
+        try {
+            await resetPassword(resetEmail);
+            setResetMessage(`Password reset link has been sent to ${resetEmail}. Please check your inbox.`);
 
-        // Auto-close modal after 3 seconds
-        setTimeout(() => {
-            setShowForgotPassword(false);
-            setResetEmail('');
-            setResetMessage('');
-        }, 3000);
+            // Auto-close modal after 5 seconds
+            setTimeout(() => {
+                setShowForgotPassword(false);
+                setResetEmail('');
+                setResetMessage('');
+            }, 5000);
+        } catch (err) {
+            setResetMessage(err.message);
+        }
     };
 
     return (
@@ -171,8 +174,8 @@ const Login = () => {
 
                         {resetMessage && (
                             <div className={`mb-4 p-3 rounded-xl text-sm ${resetMessage.includes('sent')
-                                    ? 'bg-green-50 border border-green-200 text-green-700'
-                                    : 'bg-red-50 border border-red-200 text-red-600'
+                                ? 'bg-green-50 border border-green-200 text-green-700'
+                                : 'bg-red-50 border border-red-200 text-red-600'
                                 }`}>
                                 {resetMessage}
                             </div>
