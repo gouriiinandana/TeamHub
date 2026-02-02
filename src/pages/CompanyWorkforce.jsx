@@ -26,6 +26,12 @@ const CompanyWorkforce = () => {
     const { currentUser } = useAuth();
     const isAdmin = currentUser?.role === 'Admin';
 
+    // Identify if current user is a lead of any workforce team
+    const myEmployee = employees.find(emp => emp.email === currentUser?.email);
+    const ledTeams = workforceTeams.filter(t => t.lead === myEmployee?.id);
+    const isTeamLead = ledTeams.length > 0;
+    const canScheduleGames = isAdmin || isTeamLead;
+
     const [showTeamModal, setShowTeamModal] = useState(false);
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
     const [showMemberModal, setShowMemberModal] = useState(false);
@@ -354,10 +360,14 @@ const CompanyWorkforce = () => {
                         <Gamepad2 size={24} className="text-indigo-600" />
                         Workforce Activities & Games
                     </h2>
-                    {isAdmin && (
+                    {canScheduleGames && (
                         <button
                             onClick={() => {
                                 resetGameForm();
+                                // For team leads, pre-select their first team if they lead only one
+                                if (!isAdmin && ledTeams.length === 1) {
+                                    setGameForm(prev => ({ ...prev, conductingTeam: ledTeams[0].id }));
+                                }
                                 setShowGameModal(true);
                             }}
                             className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
@@ -370,40 +380,44 @@ const CompanyWorkforce = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).length > 0 ? (
-                        scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).map(game => (
-                            <div key={game.id} className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-50 flex flex-col group relative">
-                                {isAdmin && (
-                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleEditGame(game)}
-                                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
+                        scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).map(game => {
+                            const canEditThisGame = isAdmin || ledTeams.some(lt => lt.id === game.conductingTeam);
+
+                            return (
+                                <div key={game.id} className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-50 flex flex-col group relative">
+                                    {canEditThisGame && (
+                                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleEditGame(game)}
+                                                className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <h3 className="font-bold text-slate-800 mb-3 pr-8">{game.name}</h3>
+                                    <div className="space-y-2 text-sm text-slate-600 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={14} className="text-indigo-400" />
+                                            {new Date(game.dateTime).toLocaleString()}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin size={14} className="text-pink-400" />
+                                            {game.location}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Users size={14} className="text-emerald-400" />
+                                            <span>By: {workforceTeams.find(wt => wt.id === game.conductingTeam)?.name}</span>
+                                        </div>
                                     </div>
-                                )}
-                                <h3 className="font-bold text-slate-800 mb-3 pr-8">{game.name}</h3>
-                                <div className="space-y-2 text-sm text-slate-600 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={14} className="text-indigo-400" />
-                                        {new Date(game.dateTime).toLocaleString()}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <MapPin size={14} className="text-pink-400" />
-                                        {game.location}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Users size={14} className="text-emerald-400" />
-                                        <span>By: {workforceTeams.find(wt => wt.id === game.conductingTeam)?.name}</span>
+                                    <div className="mt-4">
+                                        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-semibold">
+                                            {game.gameType}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="mt-4">
-                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-semibold">
-                                        {game.gameType}
-                                    </span>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <p className="text-center text-slate-400 italic py-8 col-span-full">No activities scheduled by workforce teams</p>
                     )}
@@ -669,7 +683,7 @@ const CompanyWorkforce = () => {
                                     required
                                 >
                                     <option value="">Select Workforce Team</option>
-                                    {workforceTeams.map(wt => (
+                                    {(isAdmin ? workforceTeams : ledTeams).map(wt => (
                                         <option key={wt.id} value={wt.id}>{wt.name} ({wt.type})</option>
                                     ))}
                                 </select>
