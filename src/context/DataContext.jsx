@@ -301,6 +301,31 @@ export const DataProvider = ({ children }) => {
     setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
   };
 
+  const addReactionToAnnouncement = (announcementId, emoji, employeeId) => {
+    setAnnouncements(prev => prev.map(announcement => {
+      if (announcement.id === announcementId) {
+        const reactions = announcement.reactions || {};
+        const emojiReactions = reactions[emoji] || [];
+
+        // Toggle reaction - if employee already reacted with this emoji, remove it
+        const hasReacted = emojiReactions.includes(employeeId);
+        const updatedEmojiReactions = hasReacted
+          ? emojiReactions.filter(id => id !== employeeId)
+          : [...emojiReactions, employeeId];
+
+        // Remove emoji key if no reactions left
+        const updatedReactions = { ...reactions, [emoji]: updatedEmojiReactions };
+        if (updatedEmojiReactions.length === 0) {
+          delete updatedReactions[emoji];
+        }
+
+        return { ...announcement, reactions: updatedReactions };
+      }
+      return announcement;
+    }));
+  };
+
+
   // Admin Functions
   const updateSystemSettings = (updates) => {
     setSystemSettings(prev => ({ ...prev, ...updates }));
@@ -386,6 +411,7 @@ export const DataProvider = ({ children }) => {
       addAnnouncement,
       updateAnnouncement,
       deleteAnnouncement,
+      addReactionToAnnouncement,
       systemSettings,
       updateSystemSettings,
       activities,

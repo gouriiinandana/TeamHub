@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Building2, Users, Plus, Trash2, UserPlus, UserMinus, Megaphone, AlertCircle, X, Edit2, Gamepad2, Calendar, MapPin, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Building2, Users, Plus, Trash2, UserPlus, UserMinus, Megaphone, AlertCircle, X, Edit2, Gamepad2, Calendar, MapPin, Clock, Smile } from 'lucide-react';
 
 const CompanyWorkforce = () => {
     const {
@@ -15,11 +16,14 @@ const CompanyWorkforce = () => {
         addAnnouncement,
         updateAnnouncement,
         deleteAnnouncement,
+        addReactionToAnnouncement,
         scheduledGames,
         scheduleGame,
         updateScheduledGame,
         teams
     } = useData();
+
+    const { currentUser } = useAuth();
 
     const [showTeamModal, setShowTeamModal] = useState(false);
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -29,6 +33,8 @@ const CompanyWorkforce = () => {
     const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', priority: 'medium' });
     const [showGameModal, setShowGameModal] = useState(false);
     const [gameForm, setGameForm] = useState({ name: '', dateTime: '', location: '', gameType: '', description: '', conductingTeam: '' });
+    const [showReactionPicker, setShowReactionPicker] = useState(null);
+    const [showReactionModal, setShowReactionModal] = useState(null);
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
@@ -236,36 +242,94 @@ const CompanyWorkforce = () => {
 
                 <div className="space-y-3">
                     {announcements.length > 0 ? (
-                        announcements.slice(0, 5).map(announcement => (
-                            <div key={announcement.id} className="bg-white rounded-xl p-4 border-l-4 border-amber-500 flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <h3 className="font-bold text-slate-800">{announcement.title}</h3>
-                                        <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(announcement.priority)}`}>
-                                            {announcement.priority}
-                                        </span>
+                        announcements.slice(0, 5).map(announcement => {
+                            const reactions = announcement.reactions || {};
+                            const availableEmojis = ['👍', '❤️', '😊', '🎉', '👏', '🔥'];
+
+                            return (
+                                <div key={announcement.id} className="bg-white rounded-xl p-4 border-l-4 border-amber-500">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h3 className="font-bold text-slate-800">{announcement.title}</h3>
+                                                <span className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(announcement.priority)}`}>
+                                                    {announcement.priority}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-slate-600">{announcement.content}</p>
+                                            <p className="text-xs text-slate-400 mt-2">
+                                                {new Date(announcement.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => handleEditAnnouncement(announcement)}
+                                                className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteAnnouncement(announcement.id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-slate-600">{announcement.content}</p>
-                                    <p className="text-xs text-slate-400 mt-2">
-                                        {new Date(announcement.createdAt).toLocaleDateString()}
-                                    </p>
+
+                                    {/* Reactions Section */}
+                                    <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-slate-100">
+                                        {/* Display existing reactions */}
+                                        {Object.entries(reactions).map(([emoji, employeeIds]) => (
+                                            employeeIds.length > 0 && (
+                                                <button
+                                                    key={emoji}
+                                                    onClick={() => setShowReactionModal({ announcementId: announcement.id, emoji, employeeIds })}
+                                                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-all ${currentUser && employeeIds.includes(currentUser.id)
+                                                        ? 'bg-indigo-100 border-2 border-indigo-400'
+                                                        : 'bg-slate-100 border border-slate-200 hover:bg-slate-200'
+                                                        }`}
+                                                >
+                                                    <span>{emoji}</span>
+                                                    <span className="text-xs font-semibold text-slate-700">{employeeIds.length}</span>
+                                                </button>
+                                            )
+                                        ))}
+
+                                        {/* Add reaction button */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowReactionPicker(showReactionPicker === announcement.id ? null : announcement.id)}
+                                                className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                                                title="Add reaction"
+                                            >
+                                                <Smile size={18} />
+                                            </button>
+
+                                            {/* Emoji Picker Popup */}
+                                            {showReactionPicker === announcement.id && (
+                                                <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 flex gap-1 z-10">
+                                                    {availableEmojis.map(emoji => (
+                                                        <button
+                                                            key={emoji}
+                                                            onClick={() => {
+                                                                if (currentUser) {
+                                                                    addReactionToAnnouncement(announcement.id, emoji, currentUser.id);
+                                                                    setShowReactionPicker(null);
+                                                                }
+                                                            }}
+                                                            className="text-2xl hover:scale-125 transition-transform p-1"
+                                                        >
+                                                            {emoji}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex gap-1">
-                                    <button
-                                        onClick={() => handleEditAnnouncement(announcement)}
-                                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => deleteAnnouncement(announcement.id)}
-                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <p className="text-center text-amber-600 italic py-8">No announcements yet</p>
                     )}
@@ -626,6 +690,48 @@ const CompanyWorkforce = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Reaction Modal - Show who reacted */}
+            {showReactionModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReactionModal(null)}>
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <span className="text-3xl">{showReactionModal.emoji}</span>
+                                <span>Reactions</span>
+                            </h3>
+                            <button
+                                onClick={() => setShowReactionModal(null)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {showReactionModal.employeeIds.map(empId => {
+                                const emp = employees.find(e => e.id === empId);
+                                return emp ? (
+                                    <div key={empId} className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-bold">
+                                            {emp.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-slate-800">{emp.name}</div>
+                                            <div className="text-sm text-slate-500">{emp.designation}</div>
+                                        </div>
+                                    </div>
+                                ) : null;
+                            })}
+                        </div>
+                        <button
+                            onClick={() => setShowReactionModal(null)}
+                            className="w-full mt-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}
