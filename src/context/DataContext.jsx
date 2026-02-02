@@ -185,7 +185,17 @@ export const DataProvider = ({ children }) => {
   };
 
   const updateEmployeePoints = (empId, pointsToAdd) => {
-    setEmployees(prev => prev.map(e => e.id === empId ? { ...e, points: e.points + pointsToAdd } : e));
+    console.log('🔍 updateEmployeePoints called:', { empId, pointsToAdd });
+    setEmployees(prev => {
+      const updated = prev.map(e => {
+        if (e.id === empId) {
+          console.log('📊 Before update:', { name: e.name, oldPoints: e.points, adding: pointsToAdd, newPoints: e.points + pointsToAdd });
+          return { ...e, points: e.points + pointsToAdd };
+        }
+        return e;
+      });
+      return updated;
+    });
   };
 
   const setTeamPoints = (teamId, newPoints) => {

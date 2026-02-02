@@ -26,10 +26,13 @@ const Games = () => {
 
     const handleAwardPoints = (e) => {
         e.preventDefault();
+        console.log('🎮 handleAwardPoints called');
         if (!selectedId || !points) return;
 
         const pointsNum = parseInt(points);
         const activityName = reason || 'Game Activity';
+
+        console.log('🎯 Awarding points:', { targetType, selectedId, pointsNum, activityName });
 
         if (targetType === 'team') {
             updateTeamPoints(selectedId, pointsNum);
@@ -39,6 +42,7 @@ const Games = () => {
                 teamScores: [{ teamId: selectedId, points: pointsNum }]
             });
         } else {
+            console.log('👤 Calling updateEmployeePoints for individual');
             updateEmployeePoints(selectedId, pointsNum);
             addGame({
                 name: activityName,
