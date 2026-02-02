@@ -19,15 +19,22 @@ const DailyTask = () => {
 
     // Load saved data for selected date
     useEffect(() => {
-        const dateData = dailyTasks[selectedDate];
-        if (dateData?.ott && dateData.ott.length > 0) {
-            setOttTasks(dateData.ott);
+        // For OTT: Load tomorrow's OTT tasks (submitted today for tomorrow)
+        const tomorrow = new Date(selectedDate);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        const tomorrowData = dailyTasks[tomorrowStr];
+        if (tomorrowData?.ott && tomorrowData.ott.length > 0) {
+            setOttTasks(tomorrowData.ott);
             setOttSubmitted(true);
         } else {
             setOttTasks(['', '', '']);
             setOttSubmitted(false);
         }
 
+        // For MIT: Load today's MIT (selected from yesterday's OTT)
+        const dateData = dailyTasks[selectedDate];
         if (dateData?.mit) {
             setSelectedMIT(dateData.mit);
             setMitSubmitted(true);
@@ -77,7 +84,13 @@ const DailyTask = () => {
             alert('Please add at least one task!');
             return;
         }
-        saveOTT(selectedDate, ottTasks);
+
+        // Save OTT for TOMORROW
+        const tomorrow = new Date(selectedDate);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        saveOTT(tomorrowStr, ottTasks);
         setOttSubmitted(true);
     };
 
@@ -106,6 +119,8 @@ const DailyTask = () => {
             alert('Please select a task!');
             return;
         }
+
+        // Save MIT for TODAY (from yesterday's OTT)
         saveMIT(selectedDate, selectedMIT);
         setMitSubmitted(true);
     };
@@ -135,6 +150,17 @@ const DailyTask = () => {
 
     const isToday = selectedDate === today;
     const filledOttTasks = ottTasks.filter(task => task.trim() !== '');
+
+    // Get yesterday's OTT tasks for MIT selection
+    const getYesterdayOttTasks = () => {
+        const yesterday = new Date(selectedDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayData = dailyTasks[yesterdayStr];
+        return yesterdayData?.ott?.filter(task => task.trim() !== '') || [];
+    };
+
+    const yesterdayOttTasks = getYesterdayOttTasks();
 
     return (
         <div className="space-y-8 pb-8">
@@ -293,8 +319,8 @@ const DailyTask = () => {
                             <span className="font-medium text-slate-600">Fill between 6:00 AM - 10:00 PM</span>
                             {isToday && (
                                 <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${isMitTimeValid()
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-red-100 text-red-700'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-red-100 text-red-700'
                                     }`}>
                                     {isMitTimeValid() ? '✓ Open' : '✗ Closed'}
                                 </span>
@@ -302,23 +328,17 @@ const DailyTask = () => {
                         </div>
                     </div>
 
-                    {!ottSubmitted ? (
+                    {yesterdayOttTasks.length === 0 ? (
                         <div className="bg-white/70 rounded-2xl p-6 border border-amber-200 text-center">
                             <Moon size={48} className="mx-auto mb-3 text-slate-300" />
                             <p className="text-slate-500 font-medium">
-                                {!isToday ? 'No OTT tasks for this date' : 'Please submit your OTT tasks first'}
+                                {!isToday ? 'No OTT tasks from previous day' : 'No OTT tasks from yesterday'}
                             </p>
                             {isToday && (
                                 <p className="text-sm text-slate-400 mt-2">
-                                    You need to organize your tasks before selecting the most important one
+                                    You need to submit OTT tasks today (before 8 PM) to select MIT tomorrow
                                 </p>
                             )}
-                        </div>
-                    ) : filledOttTasks.length === 0 ? (
-                        <div className="bg-white/70 rounded-2xl p-6 border border-amber-200 text-center">
-                            <p className="text-slate-500 font-medium">
-                                No tasks available to select
-                            </p>
                         </div>
                     ) : mitSubmitted ? (
                         <div className="space-y-4">
@@ -352,10 +372,10 @@ const DailyTask = () => {
                                 <form onSubmit={handleMitSubmit} className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-3">
-                                            Select your most important task for today:
+                                            Select your most important task from yesterday's OTT:
                                         </label>
                                         <div className="space-y-3">
-                                            {filledOttTasks.map((task, index) => (
+                                            {yesterdayOttTasks.map((task, index) => (
                                                 <label
                                                     key={index}
                                                     className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedMIT === task
