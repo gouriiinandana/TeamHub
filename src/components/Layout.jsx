@@ -134,18 +134,6 @@ const Layout = ({ children }) => {
                                                 <Settings size={18} className="text-indigo-600" />
                                                 Settings
                                             </button>
-                                            {currentUser?.role === 'Admin' && (
-                                                <button
-                                                    onClick={() => {
-                                                        setIsProfileDropdownOpen(false);
-                                                        navigate('/admin');
-                                                    }}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-slate-800 hover:bg-amber-50 rounded-xl transition-colors"
-                                                >
-                                                    <ShieldCheck size={18} className="text-amber-600" />
-                                                    Admin Panel
-                                                </button>
-                                            )}
                                             <button
                                                 onClick={() => {
                                                     setIsProfileDropdownOpen(false);
