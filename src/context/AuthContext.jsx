@@ -95,6 +95,17 @@ export const AuthProvider = ({ children }) => {
         return updatedUser;
     };
 
+    const updateSystemRole = (userEmail, role) => {
+        setRegisteredUsers(prev => prev.map(u =>
+            u.email?.toLowerCase() === userEmail?.toLowerCase() ? { ...u, role } : u
+        ));
+
+        // If the updated user is the current user, update their session too
+        if (currentUser?.email?.toLowerCase() === userEmail?.toLowerCase()) {
+            setCurrentUser(prev => ({ ...prev, role }));
+        }
+    };
+
     const value = {
         currentUser,
         signup,
@@ -103,6 +114,7 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
         isAuthenticated,
         updateUserProfile,
+        updateSystemRole,
         loading: false
     };
 

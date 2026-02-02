@@ -45,7 +45,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/teams" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute>
                   <Layout>
                     <Teams />
                   </Layout>

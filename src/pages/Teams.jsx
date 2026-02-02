@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Users, Gamepad2, Trophy, MoreHorizontal, Settings, X, Search, Crown, UserCog, Edit3, Clock, MapPin, Trash2 } from 'lucide-react';
 
 const Teams = () => {
     const { teams, employees, createTeam, assignTeam, removeFromTeam, setTeamPoints, scheduledGames } = useData();
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'Admin';
     const [newTeamName, setNewTeamName] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTeamId, setActiveTeamId] = useState(null);
@@ -46,12 +49,15 @@ const Teams = () => {
                     <p className="text-slate-500 mt-1 text-sm md:text-base">View and manage all company teams</p>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-indigo-500/30 transform hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
-                >
-                    <Plus size={20} /> Add New Team
-                </button>
+
+                {isAdmin && (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-indigo-500/30 transform hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Plus size={20} /> Add New Team
+                    </button>
+                )}
             </div>
 
             {/* Teams Grid - FULL WIDTH OPTIMIZED */}
@@ -104,12 +110,14 @@ const Teams = () => {
                                             <div className="px-3 py-1 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1 shadow-sm whitespace-nowrap group/points">
                                                 <Trophy size={14} className="text-amber-500" />
                                                 <span className="font-bold text-slate-700">{team.points}</span>
-                                                <button
-                                                    onClick={() => handleEditPoints(team.id, team.points)}
-                                                    className="ml-1 opacity-0 group-hover/points:opacity-100 transition-opacity p-1 hover:bg-amber-100 rounded"
-                                                >
-                                                    <Edit3 size={12} className="text-amber-600" />
-                                                </button>
+                                                {isAdmin && (
+                                                    <button
+                                                        onClick={() => handleEditPoints(team.id, team.points)}
+                                                        className="ml-1 opacity-0 group-hover/points:opacity-100 transition-opacity p-1 hover:bg-amber-100 rounded"
+                                                    >
+                                                        <Edit3 size={12} className="text-amber-600" />
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                         {leader && (
@@ -139,7 +147,7 @@ const Teams = () => {
                                         onClick={() => setActiveTeamId(team.id)}
                                         className="w-full py-3 bg-slate-50 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-violet-600 hover:text-white text-slate-600 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 group-hover:shadow-lg shadow-indigo-500/20"
                                     >
-                                        Manage Team <Settings size={16} />
+                                        {isAdmin ? 'Manage Team' : 'View Members'} <Settings size={16} />
                                     </button>
                                 </div>
                             </div>
@@ -277,6 +285,8 @@ const Teams = () => {
 
 // Sub-component for Manage Team
 const ManageTeamModal = ({ teamId, onClose, employees, assignTeam, removeFromTeam, teams }) => {
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'Admin';
     const team = teams.find(t => t.id === teamId);
     const teamMembers = employees.filter(e => e.teamId === teamId);
     const [selectedEmp, setSelectedEmp] = useState('');
@@ -336,37 +346,39 @@ const ManageTeamModal = ({ teamId, onClose, employees, assignTeam, removeFromTea
                 <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h3 className="text-lg font-bold text-slate-700 w-full md:w-auto">Team Members</h3>
-                        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:flex-none">
-                                <select
-                                    value={selectedEmp}
-                                    onChange={(e) => setSelectedEmp(e.target.value)}
-                                    className="w-full md:w-48 px-4 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                        {isAdmin && (
+                            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                <div className="relative flex-1 md:flex-none">
+                                    <select
+                                        value={selectedEmp}
+                                        onChange={(e) => setSelectedEmp(e.target.value)}
+                                        className="w-full md:w-48 px-4 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                                    >
+                                        <option value="">Select employee...</option>
+                                        {employees.filter(e => !e.teamId).map(e => (
+                                            <option key={e.id} value={e.id}>{e.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="relative flex-1 md:flex-none">
+                                    <select
+                                        value={selectedRole}
+                                        onChange={(e) => setSelectedRole(e.target.value)}
+                                        className="w-full md:w-40 px-4 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                                    >
+                                        <option value="Member">Member</option>
+                                        <option value="Vice Lead" disabled={!!viceLead}>Vice Lead</option>
+                                        <option value="Team Lead" disabled={!!teamLead}>Team Lead</option>
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={handleAddMember}
+                                    className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg hover:shadow-indigo-500/30 transition-all shrink-0"
                                 >
-                                    <option value="">Select employee...</option>
-                                    {employees.filter(e => !e.teamId).map(e => (
-                                        <option key={e.id} value={e.id}>{e.name}</option>
-                                    ))}
-                                </select>
+                                    + Add
+                                </button>
                             </div>
-                            <div className="relative flex-1 md:flex-none">
-                                <select
-                                    value={selectedRole}
-                                    onChange={(e) => setSelectedRole(e.target.value)}
-                                    className="w-full md:w-40 px-4 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                >
-                                    <option value="Member">Member</option>
-                                    <option value="Vice Lead" disabled={!!viceLead}>Vice Lead</option>
-                                    <option value="Team Lead" disabled={!!teamLead}>Team Lead</option>
-                                </select>
-                            </div>
-                            <button
-                                onClick={handleAddMember}
-                                className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg hover:shadow-indigo-500/30 transition-all shrink-0"
-                            >
-                                + Add
-                            </button>
-                        </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -394,51 +406,53 @@ const ManageTeamModal = ({ teamId, onClose, employees, assignTeam, removeFromTea
                                         <p className="text-xs text-slate-300 mt-1 font-mono">{member.empId}</p>
                                     </div>
                                 </div>
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setEditingMember(editingMember === member.id ? null : member.id)}
-                                        className="text-slate-300 hover:text-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                                    >
-                                        <MoreHorizontal size={18} />
-                                    </button>
+                                {isAdmin && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setEditingMember(editingMember === member.id ? null : member.id)}
+                                            className="text-slate-300 hover:text-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity p-2"
+                                        >
+                                            <MoreHorizontal size={18} />
+                                        </button>
 
-                                    {/* Role Change Dropdown */}
-                                    {editingMember === member.id && (
-                                        <div className="absolute right-0 top-10 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 min-w-[140px] overflow-hidden">
-                                            <div className="p-2">
-                                                <p className="text-xs font-semibold text-slate-400 px-2 py-1">Change Role</p>
-                                                <button
-                                                    onClick={() => handleChangeRole(member.id, 'Member')}
-                                                    disabled={member.role === 'Member'}
-                                                    className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Member
-                                                </button>
-                                                <button
-                                                    onClick={() => handleChangeRole(member.id, 'Vice Lead')}
-                                                    disabled={member.role === 'Vice Lead' || (!!viceLead && viceLead.id !== member.id)}
-                                                    className="w-full px-3 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                                >
-                                                    <UserCog size={14} /> Vice Lead
-                                                </button>
-                                                <button
-                                                    onClick={() => handleChangeRole(member.id, 'Team Lead')}
-                                                    disabled={member.role === 'Team Lead' || (!!teamLead && teamLead.id !== member.id)}
-                                                    className="w-full px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                                >
-                                                    <Crown size={14} /> Team Lead
-                                                </button>
-                                                <div className="border-t border-slate-100 my-1"></div>
-                                                <button
-                                                    onClick={() => handleRemoveMember(member.id)}
-                                                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 font-medium"
-                                                >
-                                                    <Trash2 size={14} /> Remove from Team
-                                                </button>
+                                        {/* Role Change Dropdown */}
+                                        {editingMember === member.id && (
+                                            <div className="absolute right-0 top-10 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 min-w-[140px] overflow-hidden">
+                                                <div className="p-2">
+                                                    <p className="text-xs font-semibold text-slate-400 px-2 py-1">Change Role</p>
+                                                    <button
+                                                        onClick={() => handleChangeRole(member.id, 'Member')}
+                                                        disabled={member.role === 'Member'}
+                                                        className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        Member
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleChangeRole(member.id, 'Vice Lead')}
+                                                        disabled={member.role === 'Vice Lead' || (!!viceLead && viceLead.id !== member.id)}
+                                                        className="w-full px-3 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        <UserCog size={14} /> Vice Lead
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleChangeRole(member.id, 'Team Lead')}
+                                                        disabled={member.role === 'Team Lead' || (!!teamLead && teamLead.id !== member.id)}
+                                                        className="w-full px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        <Crown size={14} /> Team Lead
+                                                    </button>
+                                                    <div className="border-t border-slate-100 my-1"></div>
+                                                    <button
+                                                        onClick={() => handleRemoveMember(member.id)}
+                                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 font-medium"
+                                                    >
+                                                        <Trash2 size={14} /> Remove from Team
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {teamMembers.length === 0 && (

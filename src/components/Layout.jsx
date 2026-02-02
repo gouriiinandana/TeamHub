@@ -16,10 +16,11 @@ const Layout = ({ children }) => {
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: Users, label: 'My Team', path: '/my-team', memberOnly: true },
         { icon: Users, label: 'Employees', path: '/employees' },
-        { icon: Layers, label: 'Teams', path: '/teams', adminOnly: true },
+        { icon: Layers, label: 'Teams', path: '/teams' },
         { icon: Trophy, label: 'Games', path: '/games' },
         { icon: CheckSquare, label: 'Daily Task', path: '/daily-task' },
         { icon: Building2, label: 'Workforce', path: '/company-workforce' },
+        { icon: ShieldCheck, label: 'Admin Panel', path: '/admin', adminOnly: true },
     ];
 
     const navItems = allNavItems.filter(item => {

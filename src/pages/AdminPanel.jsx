@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import {
     ShieldCheck,
     Users,
@@ -36,8 +37,11 @@ const AdminPanel = () => {
         updateEmployee,
         deleteEmployee,
         setEmployeePoints,
-        clearData
+        clearData,
+        announcements
     } = useData();
+
+    const { updateSystemRole } = useAuth();
 
     const [activeTab, setActiveTab] = useState('users');
     const [searchTerm, setSearchTerm] = useState('');
@@ -214,7 +218,14 @@ const AdminPanel = () => {
                                                 <td className="px-6 py-4">
                                                     <select
                                                         value={emp.role}
-                                                        onChange={(e) => updateUserRole(emp.id, e.target.value)}
+                                                        onChange={(e) => {
+                                                            const newRole = e.target.value;
+                                                            updateUserRole(emp.id, newRole);
+                                                            // Sync with AuthContext roles if email exists
+                                                            if (emp.email) {
+                                                                updateSystemRole(emp.email, newRole);
+                                                            }
+                                                        }}
                                                         className="text-sm border-none bg-transparent font-medium text-slate-700 focus:ring-0 cursor-pointer"
                                                     >
                                                         <option value="Admin">Admin</option>
