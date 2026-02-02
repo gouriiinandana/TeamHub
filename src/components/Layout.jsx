@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
 
     const allNavItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: Users, label: 'My Team', path: '/my-team' },
+        { icon: Users, label: 'My Team', path: '/my-team', memberOnly: true },
         { icon: Users, label: 'Employees', path: '/employees' },
         { icon: Layers, label: 'Teams', path: '/teams', adminOnly: true },
         { icon: Trophy, label: 'Games', path: '/games' },
@@ -22,7 +22,11 @@ const Layout = ({ children }) => {
         { icon: Building2, label: 'Workforce', path: '/company-workforce', adminOnly: true },
     ];
 
-    const navItems = allNavItems.filter(item => !item.adminOnly || currentUser?.role === 'Admin');
+    const navItems = allNavItems.filter(item => {
+        if (item.adminOnly) return currentUser?.role === 'Admin';
+        if (item.memberOnly) return currentUser?.role === 'Member';
+        return true;
+    });
 
     const handleLogout = () => {
         logout();
