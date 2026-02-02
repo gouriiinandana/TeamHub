@@ -228,7 +228,9 @@ const AdminPanel = () => {
                                                         }}
                                                         className="text-sm border-none bg-transparent font-medium text-slate-700 focus:ring-0 cursor-pointer"
                                                     >
-                                                        <option value="Admin">Admin</option>
+                                                        {(emp.email?.toLowerCase() === 'anu@gksinfotech.com' || emp.role === 'Admin') && (
+                                                            <option value="Admin">Admin</option>
+                                                        )}
                                                         <option value="Member">Member</option>
                                                         <option value="Lead">Lead</option>
                                                     </select>

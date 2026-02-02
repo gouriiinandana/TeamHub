@@ -29,8 +29,10 @@ export const AuthProvider = ({ children }) => {
 
     const signup = (userData) => {
         const { name, email, password } = userData;
+        const normalizedEmail = email?.toLowerCase();
+        const superAdminEmail = 'anu@gksinfotech.com';
 
-        if (registeredUsers.find(u => u.email === email)) {
+        if (registeredUsers.find(u => u.email?.toLowerCase() === normalizedEmail)) {
             throw new Error('User already exists');
         }
 
@@ -39,7 +41,8 @@ export const AuthProvider = ({ children }) => {
             name,
             email,
             password,
-            role: registeredUsers.length === 0 ? 'Admin' : 'Member',
+            // Only Anu can be the Admin, everyone else is a Member
+            role: normalizedEmail === superAdminEmail ? 'Admin' : 'Member',
             phone: '',
             age: '',
             location: '',
@@ -96,13 +99,23 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateSystemRole = (userEmail, role) => {
+        const normalizedEmail = userEmail?.toLowerCase();
+        const superAdminEmail = 'anu@gksinfotech.com';
+
+        // Block promotion to Admin if email is not Anu
+        let finalizedRole = role;
+        if (role === 'Admin' && normalizedEmail !== superAdminEmail) {
+            finalizedRole = 'Member';
+            console.warn(`Attempted to promote ${userEmail} to Admin blocked. Defaulting to Member.`);
+        }
+
         setRegisteredUsers(prev => prev.map(u =>
-            u.email?.toLowerCase() === userEmail?.toLowerCase() ? { ...u, role } : u
+            u.email?.toLowerCase() === normalizedEmail ? { ...u, role: finalizedRole } : u
         ));
 
         // If the updated user is the current user, update their session too
-        if (currentUser?.email?.toLowerCase() === userEmail?.toLowerCase()) {
-            setCurrentUser(prev => ({ ...prev, role }));
+        if (currentUser?.email?.toLowerCase() === normalizedEmail) {
+            setCurrentUser(prev => ({ ...prev, role: finalizedRole }));
         }
     };
 
