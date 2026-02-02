@@ -24,6 +24,7 @@ const CompanyWorkforce = () => {
     } = useData();
 
     const { currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'Admin';
 
     const [showTeamModal, setShowTeamModal] = useState(false);
     const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
@@ -161,45 +162,51 @@ const CompanyWorkforce = () => {
                         <p className="text-xs text-indigo-600 mt-2">Lead: {getEmployeeName(team.lead)}</p>
                     )}
                 </div>
-                <div className="flex gap-1">
-                    <button
-                        onClick={() => handleEditTeam(team)}
-                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                        <Edit2 size={18} />
-                    </button>
-                    <button
-                        onClick={() => deleteWorkforceTeam(team.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                        <Trash2 size={18} />
-                    </button>
-                </div>
+                {isAdmin && (
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => handleEditTeam(team)}
+                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                        >
+                            <Edit2 size={18} />
+                        </button>
+                        <button
+                            onClick={() => deleteWorkforceTeam(team.id)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-slate-700">Members ({team.members?.length || 0})</span>
-                    <button
-                        onClick={() => {
-                            setSelectedTeam(team);
-                            setShowMemberModal(true);
-                        }}
-                        className="p-1 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                        <UserPlus size={16} />
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                setSelectedTeam(team);
+                                setShowMemberModal(true);
+                            }}
+                            className="p-1 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        >
+                            <UserPlus size={16} />
+                        </button>
+                    )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {team.members?.map(memberId => (
                         <div key={memberId} className="flex items-center gap-1 bg-indigo-50 px-3 py-1 rounded-full text-sm">
                             <span className="text-indigo-700">{getEmployeeName(memberId)}</span>
-                            <button
-                                onClick={() => removeMemberFromWorkforceTeam(team.id, memberId)}
-                                className="text-indigo-400 hover:text-indigo-600"
-                            >
-                                <X size={14} />
-                            </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => removeMemberFromWorkforceTeam(team.id, memberId)}
+                                    className="text-indigo-400 hover:text-indigo-600"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
                         </div>
                     ))}
                     {(!team.members || team.members.length === 0) && (
@@ -228,16 +235,18 @@ const CompanyWorkforce = () => {
                         <Megaphone size={24} className="text-amber-600" />
                         Announcements
                     </h2>
-                    <button
-                        onClick={() => {
-                            resetAnnouncementForm();
-                            setShowAnnouncementModal(true);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        New Announcement
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                resetAnnouncementForm();
+                                setShowAnnouncementModal(true);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            New Announcement
+                        </button>
+                    )}
                 </div>
 
                 <div className="space-y-3">
@@ -261,20 +270,22 @@ const CompanyWorkforce = () => {
                                                 {new Date(announcement.createdAt).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => handleEditAnnouncement(announcement)}
-                                                className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteAnnouncement(announcement.id)}
-                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                                        {isAdmin && (
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => handleEditAnnouncement(announcement)}
+                                                    className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteAnnouncement(announcement.id)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Reactions Section */}
@@ -343,30 +354,34 @@ const CompanyWorkforce = () => {
                         <Gamepad2 size={24} className="text-indigo-600" />
                         Workforce Activities & Games
                     </h2>
-                    <button
-                        onClick={() => {
-                            resetGameForm();
-                            setShowGameModal(true);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        Schedule Activity
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                resetGameForm();
+                                setShowGameModal(true);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            Schedule Activity
+                        </button>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).length > 0 ? (
                         scheduledGames.filter(g => workforceTeams.some(wt => wt.id === g.conductingTeam)).map(game => (
                             <div key={game.id} className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-50 flex flex-col group relative">
-                                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => handleEditGame(game)}
-                                        className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                </div>
+                                {isAdmin && (
+                                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => handleEditGame(game)}
+                                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
                                 <h3 className="font-bold text-slate-800 mb-3 pr-8">{game.name}</h3>
                                 <div className="space-y-2 text-sm text-slate-600 flex-1">
                                     <div className="flex items-center gap-2">
@@ -402,17 +417,19 @@ const CompanyWorkforce = () => {
                         <Users size={24} className="text-indigo-600" />
                         Management Teams
                     </h2>
-                    <button
-                        onClick={() => {
-                            resetTeamForm();
-                            setTeamForm({ ...teamForm, type: 'management' });
-                            setShowTeamModal(true);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        Add Team
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                resetTeamForm();
+                                setTeamForm({ ...teamForm, type: 'management' });
+                                setShowTeamModal(true);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            Add Team
+                        </button>
+                    )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {managementTeams.length > 0 ? (
@@ -430,17 +447,19 @@ const CompanyWorkforce = () => {
                         <Building2 size={24} className="text-emerald-600" />
                         Official Teams
                     </h2>
-                    <button
-                        onClick={() => {
-                            resetTeamForm();
-                            setTeamForm({ ...teamForm, type: 'official' });
-                            setShowTeamModal(true);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        Add Team
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => {
+                                resetTeamForm();
+                                setTeamForm({ ...teamForm, type: 'official' });
+                                setShowTeamModal(true);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            Add Team
+                        </button>
+                    )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {officialTeams.length > 0 ? (

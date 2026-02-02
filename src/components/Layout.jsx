@@ -19,7 +19,7 @@ const Layout = ({ children }) => {
         { icon: Layers, label: 'Teams', path: '/teams', adminOnly: true },
         { icon: Trophy, label: 'Games', path: '/games' },
         { icon: CheckSquare, label: 'Daily Task', path: '/daily-task' },
-        { icon: Building2, label: 'Workforce', path: '/company-workforce', adminOnly: true },
+        { icon: Building2, label: 'Workforce', path: '/company-workforce' },
     ];
 
     const navItems = allNavItems.filter(item => {

@@ -66,7 +66,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/company-workforce" element={
-                <ProtectedRoute adminOnly={true}>
+                <ProtectedRoute>
                   <Layout>
                     <CompanyWorkforce />
                   </Layout>
