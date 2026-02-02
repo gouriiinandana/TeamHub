@@ -1,18 +1,38 @@
 import React, { useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { Trophy, Medal, Crown, Activity, Users, Target } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Trophy, Medal, Crown, Activity, Users, Target, Star, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
+    const { currentUser } = useAuth();
     const { teams, employees } = useData();
+    const isAdmin = currentUser?.role === 'Admin';
+
+    // Find if the logged-in user is in the employee list
+    const myEmployeeRecord = useMemo(() => {
+        return employees.find(emp => emp.email === currentUser?.email);
+    }, [employees, currentUser]);
+
+    // Find their team
+    const myTeam = useMemo(() => {
+        if (!myEmployeeRecord || !myEmployeeRecord.teamId) return null;
+        return teams.find(t => t.id === myEmployeeRecord.teamId);
+    }, [myEmployeeRecord, teams]);
 
     // Sort Teams for Leaderboard
     const rankedTeams = useMemo(() => {
-        return [...teams].sort((a, b) => b.points - a.points);
+        return [...teams].sort((a, b) => (b.points || 0) - (a.points || 0));
     }, [teams]);
+
+    const myTeamRank = useMemo(() => {
+        if (!myTeam) return null;
+        return rankedTeams.findIndex(t => t.id === myTeam.id) + 1;
+    }, [myTeam, rankedTeams]);
 
     // Sort Employees for Individual Leaderboard
     const rankedEmployees = useMemo(() => {
-        return [...employees].sort((a, b) => b.points - a.points).slice(0, 5);
+        return [...employees].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 5);
     }, [employees]);
 
     // Calculate total stats
@@ -88,10 +108,64 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-10 pb-8">
-            <div className="text-center space-y-2 pt-4 md:pt-0 mb-12 md:mb-8">
-                <h2 className="text-3xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 tracking-tight">MGC Group Leaderboard</h2>
-                <p className="text-slate-500 text-base md:text-lg">Celebrating excellence and teamwork across the organization</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 md:pt-0 mb-8">
+                <div className="space-y-1">
+                    <h2 className="text-3xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 tracking-tight">
+                        {isAdmin ? 'MGC Group Leaderboard' : `Welcome Back, ${currentUser?.name}!`}
+                    </h2>
+                    <p className="text-slate-500 text-base md:text-lg">
+                        {isAdmin ? 'Celebrating excellence and teamwork across the organization' : 'Stay updated with your team and the company leaderboard.'}
+                    </p>
+                </div>
             </div>
+
+            {/* My Team Highlight for Members */}
+            {!isAdmin && myTeam && (
+                <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[2rem] p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden group mb-10">
+                    <div className="absolute top-0 right-0 p-12 opacity-10 transform translate-x-12 -translate-y-12 rotate-12 group-hover:scale-110 transition-transform duration-700">
+                        <Star size={240} fill="white" />
+                    </div>
+
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="flex items-center gap-6">
+                            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner border border-white/30 transform group-hover:rotate-6 transition-transform">
+                                <Users size={40} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-2 py-0.5 bg-white/20 rounded text-[10px] font-bold uppercase tracking-widest border border-white/20">Your Team</span>
+                                    <span className="px-2 py-0.5 bg-amber-400 text-indigo-900 rounded text-[10px] font-black uppercase tracking-widest shadow-lg">Rank #{myTeamRank}</span>
+                                </div>
+                                <h3 className="text-3xl font-black">{myTeam.name}</h3>
+                                <p className="text-indigo-100 mt-1 opacity-90 font-medium flex items-center gap-2">
+                                    <Activity size={14} /> Total Points: <span className="text-white font-bold">{myTeam.points || 0}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex -space-x-3">
+                                {employees.filter(e => e.teamId === myTeam.id).slice(0, 5).map((m, i) => (
+                                    <div key={m.id} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border-2 border-indigo-600 flex items-center justify-center text-[10px] font-bold shadow-lg" title={m.name}>
+                                        {m.name.charAt(0)}
+                                    </div>
+                                ))}
+                                {employees.filter(e => e.teamId === myTeam.id).length > 5 && (
+                                    <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border-2 border-indigo-600 flex items-center justify-center text-[10px] font-bold shadow-lg">
+                                        +{employees.filter(e => e.teamId === myTeam.id).length - 5}
+                                    </div>
+                                )}
+                            </div>
+                            <Link
+                                to="/employees"
+                                className="px-8 py-3 bg-white text-indigo-600 font-bold rounded-2xl hover:bg-white/90 transition-all shadow-xl flex items-center gap-2 group/btn"
+                            >
+                                Meet the Team <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

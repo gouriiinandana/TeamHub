@@ -11,6 +11,7 @@ import Teams from './pages/Teams';
 import Games from './pages/Games';
 import DailyTask from './pages/DailyTask';
 import Profile from './pages/Profile';
+import MyTeam from './pages/MyTeam';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -44,7 +45,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/teams" element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly={true}>
                   <Layout>
                     <Teams />
                   </Layout>
@@ -65,7 +66,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/company-workforce" element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly={true}>
                   <Layout>
                     <CompanyWorkforce />
                   </Layout>
@@ -78,6 +79,13 @@ function App() {
                   </Layout>
                 </ProtectedRoute>
               } />
+              <Route path="/my-team" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MyTeam />
+                  </Layout>
+                </ProtectedRoute>
+              } />
               <Route path="/settings" element={
                 <ProtectedRoute>
                   <Layout>
@@ -86,7 +94,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly={true}>
                   <Layout>
                     <AdminPanel />
                   </Layout>

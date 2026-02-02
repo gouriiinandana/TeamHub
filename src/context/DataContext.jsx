@@ -1,128 +1,105 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  collection,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  orderBy,
-  setDoc,
-  serverTimestamp,
-  increment,
-  arrayUnion,
-  arrayRemove,
-  getDoc
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
 
 const DataContext = createContext();
 
 export const useData = () => useContext(DataContext);
 
 export const DataProvider = ({ children }) => {
-  const [employees, setEmployees] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [games, setGames] = useState([]);
-  const [scheduledGames, setScheduledGames] = useState([]);
-  const [dailyTasks, setDailyTasks] = useState({});
-  const [workforceTeams, setWorkforceTeams] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [systemSettings, setSystemSettings] = useState({ appName: 'TeamHub', logo: null, primaryColor: 'indigo' });
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState(() => {
+    const saved = localStorage.getItem('teamhub_employees');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  // --- Real-time Listeners ---
+  const [teams, setTeams] = useState(() => {
+    const saved = localStorage.getItem('teamhub_teams');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [games, setGames] = useState(() => {
+    const saved = localStorage.getItem('teamhub_games');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [scheduledGames, setScheduledGames] = useState(() => {
+    const saved = localStorage.getItem('teamhub_scheduled_games');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [dailyTasks, setDailyTasks] = useState(() => {
+    const saved = localStorage.getItem('teamhub_daily_tasks');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [workforceTeams, setWorkforceTeams] = useState(() => {
+    const saved = localStorage.getItem('teamhub_workforce_teams');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [announcements, setAnnouncements] = useState(() => {
+    const saved = localStorage.getItem('teamhub_announcements');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [systemSettings, setSystemSettings] = useState(() => {
+    const saved = localStorage.getItem('teamhub_system_settings');
+    return saved ? JSON.parse(saved) : { appName: 'TeamHub', logo: null, primaryColor: 'indigo' };
+  });
+
+  const [activities, setActivities] = useState(() => {
+    const saved = localStorage.getItem('teamhub_activities');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Persistent Storage Sync
+  useEffect(() => {
+    localStorage.setItem('teamhub_employees', JSON.stringify(employees));
+  }, [employees]);
 
   useEffect(() => {
-    // Employees Listener
-    const unsubEmployees = onSnapshot(collection(db, 'employees'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEmployees(data);
-    });
+    localStorage.setItem('teamhub_teams', JSON.stringify(teams));
+  }, [teams]);
 
-    // Teams Listener
-    const unsubTeams = onSnapshot(collection(db, 'teams'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTeams(data);
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_games', JSON.stringify(games));
+  }, [games]);
 
-    // Games Listener
-    const unsubGames = onSnapshot(query(collection(db, 'games'), orderBy('createdAt', 'desc')), (snapshot) => { // Changed to createdAt for consistency
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setGames(data);
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_scheduled_games', JSON.stringify(scheduledGames));
+  }, [scheduledGames]);
 
-    // Scheduled Games Listener
-    const unsubScheduled = onSnapshot(collection(db, 'scheduledGames'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setScheduledGames(data);
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_daily_tasks', JSON.stringify(dailyTasks));
+  }, [dailyTasks]);
 
-    // Workforce Teams Listener
-    const unsubWorkforce = onSnapshot(collection(db, 'workforceTeams'), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setWorkforceTeams(data);
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_workforce_teams', JSON.stringify(workforceTeams));
+  }, [workforceTeams]);
 
-    // Announcements Listener
-    const unsubAnnouncements = onSnapshot(query(collection(db, 'announcements'), orderBy('createdAt', 'desc')), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAnnouncements(data);
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_announcements', JSON.stringify(announcements));
+  }, [announcements]);
 
-    // System Settings Listener
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'system'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSystemSettings(docSnap.data());
-      } else {
-        // Initialize default settings if not found
-        setDoc(doc(db, 'settings', 'system'), { appName: 'TeamHub', logo: null, primaryColor: 'indigo' }, { merge: true });
-      }
-    });
+  useEffect(() => {
+    localStorage.setItem('teamhub_system_settings', JSON.stringify(systemSettings));
+  }, [systemSettings]);
 
-    // Activities Listener
-    const unsubActivities = onSnapshot(query(collection(db, 'activities'), orderBy('timestamp', 'desc')), (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setActivities(data.slice(0, 100));
-    });
-
-    // Daily Tasks Listener
-    const unsubDailyTasks = onSnapshot(collection(db, 'dailyTasks'), (snapshot) => {
-      const data = {};
-      snapshot.docs.forEach(doc => {
-        data[doc.id] = doc.data();
-      });
-      setDailyTasks(data);
-      setLoading(false); // Set loading to false after all initial data is loaded
-    });
-
-    return () => {
-      unsubEmployees();
-      unsubTeams();
-      unsubGames();
-      unsubScheduled();
-      unsubWorkforce();
-      unsubAnnouncements();
-      unsubSettings();
-      unsubActivities();
-      unsubDailyTasks();
-    };
-  }, []);
+  useEffect(() => {
+    localStorage.setItem('teamhub_activities', JSON.stringify(activities));
+  }, [activities]);
 
   // --- Actions ---
 
-  const addEmployee = async (employee) => {
+  const addEmployee = (employee) => {
     const newEmployee = {
       ...employee,
+      id: Date.now().toString(),
       points: 0,
       role: employee.role || 'Member',
       status: 'Active',
       teamId: null,
-      createdAt: serverTimestamp()
+      createdAt: new Date().toISOString()
     };
-    await addDoc(collection(db, 'employees'), newEmployee);
+    setEmployees(prev => [...prev, newEmployee]);
     logActivity({
       type: 'user',
       user: 'Admin',
@@ -130,20 +107,18 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const importEmployees = async (newEmployees) => {
-    // In production, use a WriteBatch for this for better performance and atomicity
-    for (const emp of newEmployees) {
-      const formatted = {
-        ...emp,
-        points: 0,
-        role: 'Member',
-        status: 'Active',
-        teamId: null,
-        email: emp.email || '',
-        createdAt: serverTimestamp()
-      };
-      await addDoc(collection(db, 'employees'), formatted);
-    }
+  const importEmployees = (newEmployees) => {
+    const formatted = newEmployees.map(emp => ({
+      ...emp,
+      id: Math.random().toString(36).substr(2, 9),
+      points: 0,
+      role: 'Member',
+      status: 'Active',
+      teamId: null,
+      email: emp.email || '',
+      createdAt: new Date().toISOString()
+    }));
+    setEmployees(prev => [...prev, ...formatted]);
     logActivity({
       type: 'system',
       user: 'Admin',
@@ -151,184 +126,198 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const createTeam = async (teamName) => {
+  const createTeam = (teamName) => {
     const newTeam = {
+      id: Date.now().toString(),
       name: teamName,
       points: 0,
       members: [],
-      createdAt: serverTimestamp()
+      createdAt: new Date().toISOString()
     };
-    await addDoc(collection(db, 'teams'), newTeam);
+    setTeams(prev => [...prev, newTeam]);
   };
 
-  const assignTeam = async (employeeId, teamId, role = 'Member') => {
-    const empRef = doc(db, 'employees', employeeId);
-    await updateDoc(empRef, { teamId, role });
+  const assignTeam = (employeeId, teamId, role = 'Member') => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === employeeId ? { ...emp, teamId, role } : emp
+    ));
   };
 
-  const removeFromTeam = async (employeeId) => {
-    const empRef = doc(db, 'employees', employeeId);
-    await updateDoc(empRef, { teamId: null, role: 'Member' });
+  const removeFromTeam = (employeeId) => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === employeeId ? { ...emp, teamId: null, role: 'Member' } : emp
+    ));
   };
 
-  const addGame = async (game) => {
-    const gameData = {
+  const addGame = (game) => {
+    const newGame = {
       ...game,
-      createdAt: serverTimestamp()
+      id: Date.now().toString(),
+      date: game.date || new Date().toISOString()
     };
-    await addDoc(collection(db, 'games'), gameData);
+    setGames(prev => [...prev, newGame]);
 
-    // Update points in Firestore
+    // Update points locally
     if (game.teamScores) {
-      for (const score of game.teamScores) {
-        const teamRef = doc(db, 'teams', score.teamId);
-        await updateDoc(teamRef, { points: increment(score.points) });
-      }
+      game.teamScores.forEach(score => {
+        updateTeamPoints(score.teamId, score.points);
+      });
     }
 
     if (game.employeeScores) {
-      for (const score of game.employeeScores) {
-        const empRef = doc(db, 'employees', score.empId);
-        await updateDoc(empRef, { points: increment(score.points) });
-      }
+      game.employeeScores.forEach(score => {
+        updateEmployeePoints(score.empId, score.points);
+      });
     }
   };
 
-  const updateTeamPoints = async (teamId, pointsToAdd) => {
-    const teamRef = doc(db, 'teams', teamId);
-    await updateDoc(teamRef, { points: increment(pointsToAdd) });
+  const updateTeamPoints = (teamId, pointsToAdd) => {
+    setTeams(prev => prev.map(team =>
+      team.id === teamId ? { ...team, points: (team.points || 0) + pointsToAdd } : team
+    ));
   };
 
-  const updateEmployeePoints = async (empId, pointsToAdd) => {
-    const empRef = doc(db, 'employees', empId);
-    await updateDoc(empRef, { points: increment(pointsToAdd) });
+  const updateEmployeePoints = (empId, pointsToAdd) => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === empId ? { ...emp, points: (emp.points || 0) + pointsToAdd } : emp
+    ));
   };
 
-  const setTeamPoints = async (teamId, newPoints) => {
-    const teamRef = doc(db, 'teams', teamId);
-    await updateDoc(teamRef, { points: newPoints });
+  const setTeamPoints = (teamId, newPoints) => {
+    setTeams(prev => prev.map(team =>
+      team.id === teamId ? { ...team, points: newPoints } : team
+    ));
   };
 
-  const setEmployeePoints = async (empId, newPoints) => {
-    const empRef = doc(db, 'employees', empId);
-    await updateDoc(empRef, { points: newPoints });
+  const setEmployeePoints = (empId, newPoints) => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === empId ? { ...emp, points: newPoints } : emp
+    ));
   };
 
-  const updateEmployee = async (empId, updatedData) => {
-    const empRef = doc(db, 'employees', empId);
-    await updateDoc(empRef, updatedData);
+  const updateEmployee = (empId, updatedData) => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === empId ? { ...emp, ...updatedData } : emp
+    ));
   };
 
-  const deleteEmployee = async (empId) => {
-    const empRef = doc(db, 'employees', empId);
-    await deleteDoc(empRef);
+  const deleteEmployee = (empId) => {
+    setEmployees(prev => prev.filter(emp => emp.id !== empId));
   };
 
-  const scheduleGame = async (gameData) => {
+  const scheduleGame = (gameData) => {
     const newGame = {
       ...gameData,
+      id: Date.now().toString(),
       status: 'scheduled',
-      createdAt: serverTimestamp()
+      createdAt: new Date().toISOString()
     };
-    await addDoc(collection(db, 'scheduledGames'), newGame);
+    setScheduledGames(prev => [...prev, newGame]);
   };
 
-  const updateScheduledGame = async (gameId, updatedData) => {
-    const gameRef = doc(db, 'scheduledGames', gameId);
-    await updateDoc(gameRef, updatedData);
+  const updateScheduledGame = (gameId, updatedData) => {
+    setScheduledGames(prev => prev.map(game =>
+      game.id === gameId ? { ...game, ...updatedData } : game
+    ));
   };
 
-  const deleteScheduledGame = async (gameId) => {
-    const gameRef = doc(db, 'scheduledGames', gameId);
-    await deleteDoc(gameRef);
+  const deleteScheduledGame = (gameId) => {
+    setScheduledGames(prev => prev.filter(game => game.id !== gameId));
   };
 
-  const saveOTT = async (date, tasks) => {
-    const taskRef = doc(db, 'dailyTasks', date);
-    await setDoc(taskRef, { ott: tasks }, { merge: true });
+  const saveOTT = (date, tasks) => {
+    setDailyTasks(prev => ({
+      ...prev,
+      [date]: { ...prev[date], ott: tasks }
+    }));
   };
 
-  const saveMIT = async (date, task) => {
-    const taskRef = doc(db, 'dailyTasks', date);
-    await setDoc(taskRef, { mit: task }, { merge: true });
+  const saveMIT = (date, task) => {
+    setDailyTasks(prev => ({
+      ...prev,
+      [date]: { ...prev[date], mit: task }
+    }));
   };
 
-  const createWorkforceTeam = async (teamData) => {
+  const createWorkforceTeam = (teamData) => {
     const newTeam = {
       ...teamData,
+      id: Date.now().toString(),
       members: teamData.members || [],
-      createdAt: serverTimestamp()
+      createdAt: new Date().toISOString()
     };
-    const docRef = await addDoc(collection(db, 'workforceTeams'), newTeam);
-    return { id: docRef.id, ...newTeam };
+    setWorkforceTeams(prev => [...prev, newTeam]);
+    return newTeam;
   };
 
-  const updateWorkforceTeam = async (teamId, updates) => {
-    const teamRef = doc(db, 'workforceTeams', teamId);
-    await updateDoc(teamRef, updates);
+  const updateWorkforceTeam = (teamId, updates) => {
+    setWorkforceTeams(prev => prev.map(team =>
+      team.id === teamId ? { ...team, ...updates } : team
+    ));
   };
 
-  const deleteWorkforceTeam = async (teamId) => {
-    const teamRef = doc(db, 'workforceTeams', teamId);
-    await deleteDoc(teamRef);
+  const deleteWorkforceTeam = (teamId) => {
+    setWorkforceTeams(prev => prev.filter(team => team.id !== teamId));
   };
 
-  const addMemberToWorkforceTeam = async (teamId, employeeId) => {
-    const teamRef = doc(db, 'workforceTeams', teamId);
-    await updateDoc(teamRef, { members: arrayUnion(employeeId) });
+  const addMemberToWorkforceTeam = (teamId, employeeId) => {
+    setWorkforceTeams(prev => prev.map(team =>
+      team.id === teamId ? { ...team, members: [...new Set([...team.members, employeeId])] } : team
+    ));
   };
 
-  const removeMemberFromWorkforceTeam = async (teamId, employeeId) => {
-    const teamRef = doc(db, 'workforceTeams', teamId);
-    await updateDoc(teamRef, { members: arrayRemove(employeeId) });
+  const removeMemberFromWorkforceTeam = (teamId, employeeId) => {
+    setWorkforceTeams(prev => prev.map(team =>
+      team.id === teamId ? { ...team, members: team.members.filter(id => id !== employeeId) } : team
+    ));
   };
 
-  const addAnnouncement = async (announcementData) => {
+  const addAnnouncement = (announcementData) => {
     const newAnnouncement = {
       ...announcementData,
-      createdAt: serverTimestamp(),
-      reactions: {} // Initialize reactions as an empty object
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      reactions: {}
     };
-    const docRef = await addDoc(collection(db, 'announcements'), newAnnouncement);
-    return { id: docRef.id, ...newAnnouncement };
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+    return newAnnouncement;
   };
 
-  const updateAnnouncement = async (id, updates) => {
-    const announcementRef = doc(db, 'announcements', id);
-    await updateDoc(announcementRef, updates);
+  const updateAnnouncement = (id, updates) => {
+    setAnnouncements(prev => prev.map(ann =>
+      ann.id === id ? { ...ann, ...updates } : ann
+    ));
   };
 
-  const deleteAnnouncement = async (id) => {
-    const announcementRef = doc(db, 'announcements', id);
-    await deleteDoc(announcementRef);
+  const deleteAnnouncement = (id) => {
+    setAnnouncements(prev => prev.filter(ann => ann.id !== id));
   };
 
-  const addReactionToAnnouncement = async (announcementId, emoji, employeeId) => {
-    const announcementRef = doc(db, 'announcements', announcementId);
-    const docSnap = await getDoc(announcementRef);
+  const addReactionToAnnouncement = (announcementId, emoji, employeeId) => {
+    setAnnouncements(prev => prev.map(ann => {
+      if (ann.id === announcementId) {
+        const reactions = { ...ann.reactions };
+        const emojiReactions = [...(reactions[emoji] || [])];
 
-    if (docSnap.exists()) {
-      const announcement = docSnap.data();
-      const reactions = announcement.reactions || {};
-      const emojiReactions = reactions[emoji] || [];
+        const hasReacted = emojiReactions.includes(employeeId);
+        const updatedEmojiReactions = hasReacted
+          ? emojiReactions.filter(id => id !== employeeId)
+          : [...emojiReactions, employeeId];
 
-      const hasReacted = emojiReactions.includes(employeeId);
-      const updatedEmojiReactions = hasReacted
-        ? emojiReactions.filter(id => id !== employeeId)
-        : [...emojiReactions, employeeId];
+        if (updatedEmojiReactions.length === 0) {
+          delete reactions[emoji];
+        } else {
+          reactions[emoji] = updatedEmojiReactions;
+        }
 
-      const updatedReactions = { ...reactions, [emoji]: updatedEmojiReactions };
-      if (updatedEmojiReactions.length === 0) {
-        delete updatedReactions[emoji];
+        return { ...ann, reactions };
       }
-
-      await updateDoc(announcementRef, { reactions: updatedReactions });
-    }
+      return ann;
+    }));
   };
 
-  const updateSystemSettings = async (updates) => {
-    const settingsRef = doc(db, 'settings', 'system');
-    await setDoc(settingsRef, updates, { merge: true });
+  const updateSystemSettings = (updates) => {
+    setSystemSettings(prev => ({ ...prev, ...updates }));
     logActivity({
       type: 'settings',
       user: 'Admin',
@@ -336,19 +325,19 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const logActivity = async (activity) => {
+  const logActivity = (activity) => {
     const newActivity = {
       ...activity,
-      timestamp: serverTimestamp()
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString()
     };
-    await addDoc(collection(db, 'activities'), newActivity);
+    setActivities(prev => [newActivity, ...prev].slice(0, 100));
   };
 
-  const updateUserRole = async (userId, role) => {
-    const empRef = doc(db, 'employees', userId);
-    await updateDoc(empRef, { role });
-    // Note: Logging would ideally use the actual employee name, but we only have ID here.
-    // In Firestore, we could fetch it first or just log the ID.
+  const updateUserRole = (userId, role) => {
+    setEmployees(prev => prev.map(emp =>
+      emp.id === userId ? { ...emp, role } : emp
+    ));
     logActivity({
       type: 'user',
       user: 'Admin',
@@ -356,10 +345,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const toggleUserStatus = async (userId, currentStatus) => {
-    const empRef = doc(db, 'employees', userId);
+  const toggleUserStatus = (userId, currentStatus) => {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-    await updateDoc(empRef, { status: newStatus });
+    setEmployees(prev => prev.map(emp =>
+      emp.id === userId ? { ...emp, status: newStatus } : emp
+    ));
     logActivity({
       type: 'user',
       user: 'Admin',
@@ -367,10 +357,9 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const clearData = async () => {
-    // This is dangerous in Firestore, usually not implemented this way for client-side.
-    // For safety, let's just log it for now.
-    console.warn('Clear data called. Firestore data must be manually cleared or deleted by collection via admin SDK or Firebase Console.');
+  const clearData = () => {
+    localStorage.clear();
+    window.location.reload();
   };
 
   return (
@@ -384,7 +373,7 @@ export const DataProvider = ({ children }) => {
       announcements,
       systemSettings,
       activities,
-      loading, // Expose loading state
+      loading: false,
       addEmployee,
       updateEmployee,
       deleteEmployee,
@@ -417,7 +406,7 @@ export const DataProvider = ({ children }) => {
       toggleUserStatus,
       clearData
     }}>
-      {!loading && children} {/* Render children only when data is loaded */}
+      {children}
     </DataContext.Provider>
   );
 };

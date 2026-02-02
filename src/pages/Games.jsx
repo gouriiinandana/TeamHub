@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { Trophy, Medal, User, Users, PlusCircle, History, Calendar, MapPin, Clock, Edit2, Trash2, X, Gamepad2 } from 'lucide-react';
 
 const Games = () => {
+    const { currentUser } = useAuth();
     const { teams, employees, updateTeamPoints, updateEmployeePoints, addGame, games, scheduledGames, scheduleGame, updateScheduledGame, deleteScheduledGame } = useData();
+    const isAdmin = currentUser?.role === 'Admin';
 
     const [activeTab, setActiveTab] = useState('schedule'); // schedule, award, history
-    const [targetType, setTargetType] = useState('team'); // team, employee
+    const [awardMode, setAwardMode] = useState('individual-only'); // individual-only, both, team-only
     const [selectedId, setSelectedId] = useState('');
     const [points, setPoints] = useState('');
     const [reason, setReason] = useState('');
@@ -24,36 +27,70 @@ const Games = () => {
         conductingTeam: ''
     });
 
-    const handleAwardPoints = (e) => {
+    const handleAwardPoints = async (e) => {
         e.preventDefault();
         console.log('🎮 handleAwardPoints called');
-        if (!selectedId || !points) return;
+
+        if (!selectedId || !points) {
+            alert('Please select a recipient and enter points');
+            return;
+        }
 
         const pointsNum = parseInt(points);
         const activityName = reason || 'Game Activity';
 
-        console.log('🎯 Awarding points:', { targetType, selectedId, pointsNum, activityName });
+        try {
+            if (awardMode === 'individual-only') {
+                // Award to Individual ONLY
+                updateEmployeePoints(selectedId, pointsNum);
+                addGame({
+                    name: activityName,
+                    date: new Date().toISOString(),
+                    employeeScores: [{ empId: selectedId, points: pointsNum }]
+                });
+            } else if (awardMode === 'both') {
+                // Award to BOTH Individual and their Team
+                const employee = employees.find(emp => emp.id === selectedId);
+                if (!employee) throw new Error('Employee not found');
 
-        if (targetType === 'team') {
-            updateTeamPoints(selectedId, pointsNum);
-            addGame({
-                name: activityName,
-                date: new Date().toISOString(),
-                teamScores: [{ teamId: selectedId, points: pointsNum }]
-            });
-        } else {
-            console.log('👤 Calling updateEmployeePoints for individual');
-            updateEmployeePoints(selectedId, pointsNum);
-            addGame({
-                name: activityName,
-                date: new Date().toISOString(),
-                employeeScores: [{ empId: selectedId, points: pointsNum }]
-            });
+                updateEmployeePoints(selectedId, pointsNum);
+
+                if (employee.teamId) {
+                    updateTeamPoints(employee.teamId, pointsNum);
+                    addGame({
+                        name: activityName,
+                        date: new Date().toISOString(),
+                        employeeScores: [{ empId: selectedId, points: pointsNum }],
+                        teamScores: [{ teamId: employee.teamId, points: pointsNum }],
+                        description: `Awarded to ${employee.name} and their team`
+                    });
+                } else {
+                    // No team, just award to individual but log it
+                    addGame({
+                        name: activityName,
+                        date: new Date().toISOString(),
+                        employeeScores: [{ empId: selectedId, points: pointsNum }],
+                        description: `Awarded to ${employee.name} (No team assigned)`
+                    });
+                }
+            } else if (awardMode === 'team-only') {
+                // Award to Team ONLY
+                updateTeamPoints(selectedId, pointsNum);
+                addGame({
+                    name: activityName,
+                    date: new Date().toISOString(),
+                    teamScores: [{ teamId: selectedId, points: pointsNum }]
+                });
+            }
+
+            setPoints('');
+            setReason('');
+            setSelectedId('');
+            alert(`Awarded ${pointsNum} points successfully!`);
+        } catch (err) {
+            console.error('Error awarding points:', err);
+            alert('Failed to award points: ' + err.message);
         }
-
-        setPoints('');
-        setReason('');
-        alert(`Awarded ${pointsNum} points!`);
     };
 
     const handleScheduleGame = (e) => {
@@ -95,7 +132,9 @@ const Games = () => {
                 <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
                     Games Arena
                 </h2>
-                <p className="text-slate-500">Schedule games and award points</p>
+                <p className="text-slate-500">
+                    {isAdmin ? 'Schedule games and award points' : 'View upcoming games and performance history'}
+                </p>
             </div>
 
             {/* Tab Navigation */}
@@ -108,14 +147,16 @@ const Games = () => {
                         <Calendar size={18} /> Schedule Game
                     </div>
                 </button>
-                <button
-                    onClick={() => setActiveTab('award')}
-                    className={`px-6 py-3 font-semibold transition-all border-b-2 ${activeTab === 'award' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Trophy size={18} /> Award Points
-                    </div>
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('award')}
+                        className={`px-6 py-3 font-semibold transition-all border-b-2 ${activeTab === 'award' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Trophy size={18} /> Award Points
+                        </div>
+                    </button>
+                )}
                 <button
                     onClick={() => setActiveTab('history')}
                     className={`px-6 py-3 font-semibold transition-all border-b-2 ${activeTab === 'history' ? 'border-slate-600 text-slate-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
@@ -131,16 +172,18 @@ const Games = () => {
                 <div className="space-y-6">
                     <div className="flex justify-between items-center">
                         <h3 className="text-xl font-bold text-slate-800">Upcoming Games</h3>
-                        <button
-                            onClick={() => {
-                                setIsEditMode(false);
-                                setScheduleFormData({ name: '', dateTime: '', location: '', gameType: '', description: '' });
-                                setIsScheduleFormOpen(true);
-                            }}
-                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-medium rounded-xl shadow-lg hover:shadow-indigo-500/30 flex items-center gap-2 transition-all"
-                        >
-                            <PlusCircle size={18} /> Schedule New Game
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => {
+                                    setIsEditMode(false);
+                                    setScheduleFormData({ name: '', dateTime: '', location: '', gameType: '', description: '' });
+                                    setIsScheduleFormOpen(true);
+                                }}
+                                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-medium rounded-xl shadow-lg hover:shadow-indigo-500/30 flex items-center gap-2 transition-all"
+                            >
+                                <PlusCircle size={18} /> Schedule New Game
+                            </button>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -151,20 +194,22 @@ const Games = () => {
                                         <Gamepad2 className="text-indigo-500" size={24} />
                                         <h4 className="font-bold text-slate-800 text-lg">{game.name}</h4>
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleEditScheduledGame(game)}
-                                            className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-500 transition-colors"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteScheduledGame(game.id)}
-                                            className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                                    {isAdmin && (
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleEditScheduledGame(game)}
+                                                className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-500 transition-colors"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteScheduledGame(game.id)}
+                                                className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2 text-sm">
@@ -217,25 +262,37 @@ const Games = () => {
                             </h3>
 
                             <form onSubmit={handleAwardPoints} className="space-y-6 relative z-10">
-                                <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setTargetType('team'); setSelectedId(''); }}
-                                        className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${targetType === 'team' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Users size={16} /> Teams
-                                        </div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => { setTargetType('employee'); setSelectedId(''); }}
-                                        className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${targetType === 'employee' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <User size={16} /> Individual
-                                        </div>
-                                    </button>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-600 ml-1">Award Mode</label>
+                                    <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl w-fit gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setAwardMode('individual-only'); setSelectedId(''); }}
+                                            className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${awardMode === 'individual-only' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <User size={16} /> Individual Only
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setAwardMode('both'); setSelectedId(''); }}
+                                            className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${awardMode === 'both' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Medal size={16} /> Both (Indiv + Team)
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setAwardMode('team-only'); setSelectedId(''); }}
+                                            className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${awardMode === 'team-only' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Users size={16} /> Team Only
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -247,12 +304,20 @@ const Games = () => {
                                             className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
                                             required
                                         >
-                                            <option value="">Select {targetType === 'team' ? 'Team' : 'Employee'}</option>
-                                            {targetType === 'team'
+                                            <option value="">
+                                                {awardMode === 'team-only' ? 'Select Team' : 'Select Employee'}
+                                            </option>
+                                            {awardMode === 'team-only'
                                                 ? teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)
                                                 : employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.empId})</option>)
                                             }
                                         </select>
+
+                                        {awardMode === 'both' && selectedId && (
+                                            <p className="text-xs text-slate-500 mt-2 ml-1 italic">
+                                                Points will be added to this employee AND their assigned team.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">

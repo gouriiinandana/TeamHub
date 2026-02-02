@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, CheckCircle, Shield } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, CheckCircle, Shield, Users, Star, Trophy, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Profile = () => {
     const { currentUser, updateUserProfile } = useAuth();
@@ -12,6 +14,13 @@ const Profile = () => {
         age: currentUser?.age || '',
         location: currentUser?.location || ''
     });
+
+    const { teams, employees } = useData();
+    const myEmployeeRecord = employees.find(emp => emp.email === currentUser?.email);
+    const myTeam = myEmployeeRecord?.teamId ? teams.find(t => t.id === myEmployeeRecord.teamId) : null;
+
+    const rankedTeams = [...teams].sort((a, b) => (b.points || 0) - (a.points || 0));
+    const myTeamRank = myTeam ? rankedTeams.findIndex(t => t.id === myTeam.id) + 1 : null;
 
     const handleSave = () => {
         updateUserProfile({
@@ -125,6 +134,48 @@ const Profile = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Team Assignment Info */}
+                    <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mt-8">
+                        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <Users size={20} className="text-indigo-600" /> Official Assignment
+                        </h3>
+
+                        {myTeam ? (
+                            <div className="space-y-6">
+                                <div className="p-4 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl border border-indigo-100">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-bold">
+                                            {myTeam.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 truncate">{myTeam.name}</h4>
+                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Rank #{myTeamRank}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                                            <Trophy size={14} className="text-amber-500" /> {myTeam.points || 0} Team Pts
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                                            <Star size={14} className="text-pink-500" /> {myEmployeeRecord?.points || 0} Your Pts
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Link
+                                    to="/my-team"
+                                    className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all"
+                                >
+                                    View Team Dashboard <ArrowRight size={16} />
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="p-6 border-2 border-dashed border-slate-100 rounded-2xl text-center">
+                                <p className="text-sm text-slate-400">No team assigned yet.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
