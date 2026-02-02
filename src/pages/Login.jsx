@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, LogIn, Users, KeyRound } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { Mail, Lock, LogIn, Users, KeyRound, RotateCcw } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const { login, resetPassword } = useAuth();
+    const { clearData } = useData();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -47,6 +49,14 @@ const Login = () => {
             }, 5000);
         } catch (err) {
             setResetMessage(err.message);
+        }
+    };
+
+    const handleFactoryReset = () => {
+        if (window.confirm('⚠️ CRITICAL ACTION: This will permanently delete ALL data from the system, including all users, teams, and records.\n\nAre you absolutely sure you want to perform a factory reset?')) {
+            if (window.confirm('FINAL CONFIRMATION: This action CANNOT be undone. Proceed with system wipe?')) {
+                clearData();
+            }
         }
     };
 
@@ -222,6 +232,18 @@ const Login = () => {
                     </div>
                 </div>
             )}
+
+            {/* Factory Reset Trigger */}
+            <div className="fixed bottom-6 right-6">
+                <button
+                    onClick={handleFactoryReset}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl text-xs font-bold transition-all border border-red-100 shadow-sm opacity-50 hover:opacity-100"
+                    title="Wipe all data and start fresh"
+                >
+                    <RotateCcw size={14} />
+                    Factory Reset
+                </button>
+            </div>
         </div>
     );
 };
